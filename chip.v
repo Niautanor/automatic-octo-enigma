@@ -19,16 +19,32 @@ module chip (
     output UART_TX
   );
 
-  wire _reset;
+  wire _reset = 0;
 
-  reset rst(
-      .clk(clk),
-      .rst(_reset)
-  );
+  reg [7:0] next_data = 8'h41;
+  reg en = 0;
+  wire rdy;
+
+  always @(posedge clk) begin
+    if (rdy) begin
+      en <= 1;
+    end else begin
+      if (en) begin
+        if (next_data == 8'h57)
+          next_data <= 8'h41;
+        else
+          next_data <= next_data + 1;
+      end
+      en <= 0;
+    end
+  end
 
   uart_tx uart(
       .clk(clk),
       .rst(_reset),
+      .en(en),
+      .data_in(next_data),
+      .rdy(rdy),
       .tx(UART_TX)
   );
 

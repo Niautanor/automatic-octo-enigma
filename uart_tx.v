@@ -1,12 +1,18 @@
-module uart_tx (input clk, input rst, output reg tx);
+module uart_tx (input clk, input rst, input en, input [7:0] data_in, output rdy, output reg tx);
 
-// TODO: parameterize this
-reg [15:0] div = 0;
+parameter MAIN_CLK	= 100000000;
+parameter BAUD 		= 115200;
 
-reg [4:0] state = 0;
-reg [7:0] data = 8'h42;
+localparam BAUD_DIVIDE  = MAIN_CLK/BAUD;
 
-wire txclk = (div == 868);
+reg [$clog2(BAUD_DIVIDE)-1:0] div = 0;
+
+reg [3:0] state = 0;
+reg [7:0] data = 8'h00;
+
+wire txclk = (div == BAUD_DIVIDE);
+
+assign rdy = (state == 0);
 
 always @(state) begin
     case (state)
@@ -21,12 +27,17 @@ always @(posedge clk) begin
     if (rst) begin
         div <= 0;
         state <= 0;
-        data <= 8'h42;
     end else begin
-        if (txclk) begin
+        if (rdy && en) begin
+            div <= 0;
+            state <= 1;
+            data <= data_in;
+        end else if (!rdy && txclk) begin
             div <= 0;
             if (state < 10) begin
                 state <= state + 1;
+            end else begin
+                state <= 0; // go back to idle
             end
         end else begin
             div <= div + 1;
