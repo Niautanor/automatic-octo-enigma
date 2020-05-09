@@ -42,7 +42,7 @@ always @(posedge clk) begin
                 end
             end else begin
                 // shift in data
-                data <= {data << 1, rx};
+                data <= {rx, data[7:1]};
             end
         end else if (div == BAUD_DIVIDE) begin
             div <= 0;

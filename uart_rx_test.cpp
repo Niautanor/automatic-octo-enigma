@@ -60,10 +60,10 @@ public:
         std::vector<VCDEntry> ret;
         double t = tStart;
         for (const auto& bit : bits) {
-            std::vector<bool> values(10);
+            std::vector<bool> values;
             values.push_back(0);
             for (uint8_t i = 0; i < 8; ++i) {
-                values.push_back(bit.first);
+                values.push_back(bit.first & (1 << i));
             }
             values.push_back(1);
 
@@ -193,5 +193,5 @@ TEST_CASE ("Uart produces the expected bytes") {
     // signal state at the end of the simulation
     REQUIRE(uart.data_ready == false);
     // received values
-    REQUIRE(data == std::vector<uint8_t> { 0xAA, 0x55, 0x55, 'h', 'e', 'l', 'l', 'o' });
+    REQUIRE(data == std::vector<uint8_t> { 0xAA, 0x55, 0x55, 'H', 'e', 'l', 'l', 'o' });
 }
