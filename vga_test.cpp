@@ -4,7 +4,7 @@
 
 #include "utils.hpp"
 
-// #include "Vvga.h"
+#include "Vvga.h"
 
 class Checker {
 public:
@@ -25,8 +25,13 @@ public:
     auto update(bool input, double time) {
         auto result = std::optional<CheckFailReason> {};
 
-        if (time >  next->time + next->slack) {
-            result = CheckFailReason::ExpectedChangeDidNotOccur;
+        if (next != expected.cend()) {
+            UNSCOPED_INFO("Next expected change at t=" << next->time * 1e9 << "ns+-" << next->slack * 1e9 << "ns to value " << next->value);
+            if (time >  next->time + next->slack) {
+                result = CheckFailReason::ExpectedChangeDidNotOccur;
+            }
+        } else {
+            UNSCOPED_INFO("No change expected");
         }
 
         if (state != input) {
@@ -117,23 +122,32 @@ TEST_CASE("Checker tests") {
 // check if the change comes at an acceptable time
 
 TEST_CASE ("Sync timing") {
-    /*
-    uint64_t tickCount = 0;
     Vvga vga;
 
-    // test 10 frames
-    for (int i = 0; i < 10; ++i) {
+    auto sampleClock = Frequency(100e6);
+    auto pixelClock = Frequency(25.175e6);
+    auto pulseStartTime = (480 + 11) * pixelClock.getT();
+    auto pulseReleaseTime = pulseStartTime + 2 * pixelClock.getT();
+    auto frameTime = pulseReleaseTime + 23 * pixelClock.getT();
+
+    // I guess that'll be okay
+    auto pixelSlack = pixelClock.getT() * 0.5;
+
+    Checker VSyncChecker({
+        { true,  pulseStartTime, pixelSlack },
+        { false, pulseReleaseTime, pixelSlack },
+        { true,  frameTime + pulseStartTime, pixelSlack },
+        { false, frameTime + pulseReleaseTime, pixelSlack },
+    });
+
+    for (uint64_t tickCount = 0; tickCount < 2 * frameTime / sampleClock.getT(); tickCount++) {
+        INFO("t = " << tickCount * sampleClock.getT() * 1e9 << "ns, v = " << int {vga.vsync});
+        REQUIRE(VSyncChecker.update(vga.vsync, tickCount * sampleClock.getT()) == std::nullopt);
+
         vga.clk = 0;
         vga.eval();
 
-        // evaluate changes for tickCount * tickRate.getT() / 2
-
         vga.clk = 1;
         vga.eval();
-
-        // evaluate changes for tickCount * tickRate.getT()
-
-        tickCount++;
     }
-    */
 }
