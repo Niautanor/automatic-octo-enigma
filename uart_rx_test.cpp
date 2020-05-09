@@ -6,92 +6,35 @@
 
 #include "catch.hpp"
 
+#include "utils.hpp"
+
 #include "Vuart_rx.h"
 #include "verilated.h"
 #include "verilated_vcd_c.h"
 
-class Frequency {
-public:
-    constexpr Frequency(double f) : f(f) {}
-
-    constexpr double getF() const { return f; }
-    constexpr double getT() const { return 1/f; }
-
-    constexpr auto operator * (double factor) const {
-        return Frequency { f * factor };
-    }
-
-private:
-    double f;
-};
-
 static constexpr auto tickRate = Frequency(100e6);
 
-struct VCDEntry {
-    double time;
-    bool value;
-};
-
-template <typename Container> // should be Container<VCDEntry>
-constexpr bool replayVCD(const Container& vcd, bool defaultValue, double t) {
-    // find the last element where t >= elem.time (i.e. the first from the back)
-    const auto iter = std::find_if(std::rbegin(vcd), std::rend(vcd), [t](const auto& elem) {
-        return t >= elem.time;
-    });
-
-    if (iter == std::rend(vcd)) {
-        return defaultValue;
-    }
-
-    return iter->value;
-}
-
-class UartSimulation {
-public:
-    UartSimulation() = default;
-
-    constexpr bool isDone(uint64_t tickCount) {
-        const auto t = tickCount * tickRate.getT();
-        return t >= 10e-3;
-    }
-
-    template <size_t N>
-    static constexpr auto getTimings(std::array<std::pair<uint8_t, Frequency>, N> bits, double tStart) {
-        std::vector<VCDEntry> ret;
-        double t = tStart;
-        for (const auto& bit : bits) {
-            std::vector<bool> values;
-            values.push_back(0);
-            for (uint8_t i = 0; i < 8; ++i) {
-                values.push_back(bit.first & (1 << i));
-            }
-            values.push_back(1);
-
-            for (const auto& value : values) {
-                ret.push_back({t, value});
-                t += bit.second.getT();
-            }
+template <size_t N>
+static constexpr auto getUartTimings(std::array<std::pair<uint8_t, Frequency>, N> bits, double tStart) {
+    std::array<VCDEntry, N * 10> ret {};
+    double t = tStart;
+    size_t i = 0;
+    for (const auto& bit : bits) {
+        std::array<bool, 10> values {};
+        size_t k = 0;
+        values[k++] = false;
+        for (uint8_t i = 0; i < 8; ++i) {
+            values[k++] = (bit.first & (1 << i));
         }
-        return ret;
-    }
+        values[k++] = true;
 
-    bool getUart(uint64_t tickCount) const {
-        static constexpr auto baudrate = Frequency(115200);
-        static constexpr std::array bits = {
-            std::pair { uint8_t { 0xAA }, baudrate },
-            std::pair { uint8_t { 0x55 }, baudrate * 1.045 },
-            std::pair { uint8_t { 0x55 }, baudrate * 0.955 },
-            std::pair { uint8_t {  'H' }, baudrate },
-            std::pair { uint8_t {  'e' }, baudrate },
-            std::pair { uint8_t {  'l' }, baudrate },
-            std::pair { uint8_t {  'l' }, baudrate },
-            std::pair { uint8_t {  'o' }, baudrate },
-        };
-        static const auto timings = getTimings(bits, 100e-6);
-        const auto t = tickCount * tickRate.getT();
-        return replayVCD(timings, true, t);
+        for (const auto& value : values) {
+            ret[i++] = {t, value};
+            t += bit.second.getT();
+        }
     }
-};
+    return ret;
+}
 
 class TraceScope final {
 public:
@@ -162,17 +105,28 @@ TEST_CASE ("Uart start bit gets detected") {
 //int main(int argc, char **argv) {
 TEST_CASE ("Uart produces the expected bytes") {
     //Verilated::commandArgs(argc, argv);
+    static constexpr auto baudrate = Frequency(115200);
+    static constexpr std::array bits = {
+        std::pair { uint8_t { 0xAA }, baudrate },
+        std::pair { uint8_t { 0x55 }, baudrate * 1.045 },
+        std::pair { uint8_t { 0x55 }, baudrate * 0.955 },
+        std::pair { uint8_t {  'H' }, baudrate },
+        std::pair { uint8_t {  'e' }, baudrate },
+        std::pair { uint8_t {  'l' }, baudrate },
+        std::pair { uint8_t {  'l' }, baudrate },
+        std::pair { uint8_t {  'o' }, baudrate },
+    };
+    static constexpr auto timings = getUartTimings(bits, 100e-6);
 
     Vuart_rx uart;
     TraceScope trace(uart, "bytes.vcd");
 
-    UartSimulation uartSim;
     uint64_t tick_count = 0;
     bool dataIsNew = false;
     std::vector<uint8_t> data;
 
-    while (!uartSim.isDone(tick_count)) {
-        uart.rx = uartSim.getUart(tick_count);
+    while (tick_count * tickRate.getT() < 10e-3) {
+        uart.rx = replayVCD(timings, true, tick_count * tickRate.getT());
         uart.clk = 0;
         uart.eval();
         trace.dump(tick_count * 10);
