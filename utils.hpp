@@ -1,3 +1,5 @@
+#include "verilated_vcd_c.h"
+
 class Frequency {
 public:
     constexpr Frequency(double f) : f(f) {}
@@ -31,3 +33,23 @@ constexpr bool replayVCD(const Container& vcd, bool defaultValue, double t) {
 
     return iter->value;
 }
+
+class TraceScope final {
+public:
+    template <class V>
+    TraceScope(V& v, const std::string& file) {
+        v.trace(&trace, 99);
+        trace.open(file.c_str());
+    }
+
+    ~TraceScope() {
+        trace.close();
+    }
+
+    void dump(uint64_t ticks) {
+        trace.dump(ticks);
+    }
+
+private:
+    VerilatedVcdC trace;
+};

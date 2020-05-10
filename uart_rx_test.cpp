@@ -10,7 +10,6 @@
 
 #include "Vuart_rx.h"
 #include "verilated.h"
-#include "verilated_vcd_c.h"
 
 static constexpr auto tickRate = Frequency(100e6);
 
@@ -35,26 +34,6 @@ static constexpr auto getUartTimings(std::array<std::pair<uint8_t, Frequency>, N
     }
     return ret;
 }
-
-class TraceScope final {
-public:
-    template <class V>
-    TraceScope(V& v, const std::string& file) {
-        v.trace(&trace, 99);
-        trace.open(file.c_str());
-    }
-
-    ~TraceScope() {
-        trace.close();
-    }
-
-    void dump(uint64_t ticks) {
-        trace.dump(ticks);
-    }
-
-private:
-    VerilatedVcdC trace;
-};
 
 TEST_CASE ("Uart start bit gets detected") {
     constexpr auto baudrate = Frequency(115200);
