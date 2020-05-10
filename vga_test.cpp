@@ -57,6 +57,16 @@ public:
         return expected;
     }
 
+    bool getExpectation(double time) const {
+        const auto iter = std::find_if(expected.crbegin(), expected.crend(), [time](const auto& x) {
+            return time > x.time;
+        });
+        if (iter == expected.crend()) {
+            return false;
+        }
+        return iter->value;
+    }
+
 private:
     bool state = false;
     std::vector<CheckableValueChange> expected;
@@ -140,26 +150,41 @@ TEST_CASE ("Sync timing") {
     auto hPulseReleaseTime = hPulseStartTime + 96 * pixelClock.getT();
     auto lineTime = hPulseReleaseTime + 48 * pixelClock.getT();
 
+    auto vPulseStartTime = (480 + 11) * lineTime;
+    auto vPulseReleaseTime = vPulseStartTime + 2 * lineTime;
+    auto frameTime = vPulseReleaseTime + 31 * lineTime;
+
     // I guess that'll be okay
     auto pixelSlack = pixelClock.getT() * 0.5;
 
-    Checker HSyncChecker({
-        { true,  hPulseStartTime, pixelSlack },
-        { false, hPulseReleaseTime, pixelSlack },
-        { true,  lineTime + hPulseStartTime, pixelSlack },
-        { false, lineTime + hPulseReleaseTime, pixelSlack },
+    std::vector<Checker::CheckableValueChange> hsyncs;
+    for (int line = 0; line < 2 * (480+11+2+31); ++line) {
+        hsyncs.push_back({ true,  line * lineTime + hPulseStartTime, pixelSlack });
+        hsyncs.push_back({ false, line * lineTime + hPulseReleaseTime, pixelSlack });
+    }
+    Checker HSyncChecker(hsyncs);
+    Checker VSyncChecker({
+        { true, vPulseStartTime, pixelSlack },
+        { false, vPulseReleaseTime, pixelSlack },
+        { true, frameTime + vPulseStartTime, pixelSlack },
+        { false, frameTime + vPulseReleaseTime, pixelSlack },
     });
 
-    for (uint64_t tickCount = 0; tickCount < 2 * lineTime / sampleClock.getT(); tickCount++) {
-        INFO("t = " << tickCount * sampleClock.getT() * 1e9 << "ns, v = " << int {vga.vsync});
+    std::cout << "Expected at 15.8ms = " << HSyncChecker.getExpectation(15.801e-3) << std::endl;
+
+    for (uint64_t tickCount = 0; tickCount < 2 * frameTime / sampleClock.getT(); tickCount++) {
+        INFO("t = " << tickCount * sampleClock.getT() * 1e3 << "ms, v = " << int {vga.vsync});
         REQUIRE(HSyncChecker.update(vga.hsync, tickCount * sampleClock.getT()) == std::nullopt);
+        REQUIRE(VSyncChecker.update(vga.vsync, tickCount * sampleClock.getT()) == std::nullopt);
 
         vga.eval();
+        vga.exp_vsync = VSyncChecker.getExpectation(tickCount * sampleClock.getT());
         vga.clk = 0;
         vga.eval();
         trace.dump(tickCount * 10);
 
         vga.clk = 1;
+        vga.exp_vsync = VSyncChecker.getExpectation((tickCount + 0.5) * sampleClock.getT());
         vga.eval();
         trace.dump(tickCount * 10 + 5);
     }
