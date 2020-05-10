@@ -1,4 +1,5 @@
 #include <optional>
+#include <iostream>
 
 #include "catch.hpp"
 
@@ -50,6 +51,10 @@ public:
         }
 
         return result;
+    }
+
+    const std::vector<CheckableValueChange>& getExpected() const {
+        return expected;
     }
 
 private:
@@ -118,36 +123,44 @@ TEST_CASE("Checker tests") {
     CHECK(checker.update(false, 1.3) == Checker::CheckFailReason::ExpectedChangeDidNotOccur);
 }
 
-// detect changes in signals
-// check if the change comes at an acceptable time
+std::ostream& operator << (std::ostream& stream, Checker::CheckableValueChange change) {
+    return stream << "{ " << int { change.value } << ", @" << change.time * 1e9 << "ns+-" << change.slack * 1e9 << "ns }";
+}
 
 TEST_CASE ("Sync timing") {
     Vvga vga;
+    TraceScope trace(vga, "vga_sync.vcd");
 
     auto sampleClock = Frequency(100e6);
-    auto pixelClock = Frequency(25.175e6);
-    auto pulseStartTime = (480 + 11) * pixelClock.getT();
-    auto pulseReleaseTime = pulseStartTime + 2 * pixelClock.getT();
-    auto frameTime = pulseReleaseTime + 23 * pixelClock.getT();
+    // the "technically correct" clock to get exactly 60FPS is 25.175 MHz but we
+    // reduce it to 25MHz to make the implementation easier
+    auto pixelClock = Frequency(25e6);
+
+    auto hPulseStartTime = (640 + 16) * pixelClock.getT();
+    auto hPulseReleaseTime = hPulseStartTime + 96 * pixelClock.getT();
+    auto lineTime = hPulseReleaseTime + 48 * pixelClock.getT();
 
     // I guess that'll be okay
     auto pixelSlack = pixelClock.getT() * 0.5;
 
-    Checker VSyncChecker({
-        { true,  pulseStartTime, pixelSlack },
-        { false, pulseReleaseTime, pixelSlack },
-        { true,  frameTime + pulseStartTime, pixelSlack },
-        { false, frameTime + pulseReleaseTime, pixelSlack },
+    Checker HSyncChecker({
+        { true,  hPulseStartTime, pixelSlack },
+        { false, hPulseReleaseTime, pixelSlack },
+        { true,  lineTime + hPulseStartTime, pixelSlack },
+        { false, lineTime + hPulseReleaseTime, pixelSlack },
     });
 
-    for (uint64_t tickCount = 0; tickCount < 2 * frameTime / sampleClock.getT(); tickCount++) {
+    for (uint64_t tickCount = 0; tickCount < 2 * lineTime / sampleClock.getT(); tickCount++) {
         INFO("t = " << tickCount * sampleClock.getT() * 1e9 << "ns, v = " << int {vga.vsync});
-        REQUIRE(VSyncChecker.update(vga.vsync, tickCount * sampleClock.getT()) == std::nullopt);
+        REQUIRE(HSyncChecker.update(vga.hsync, tickCount * sampleClock.getT()) == std::nullopt);
 
+        vga.eval();
         vga.clk = 0;
         vga.eval();
+        trace.dump(tickCount * 10);
 
         vga.clk = 1;
         vga.eval();
+        trace.dump(tickCount * 10 + 5);
     }
 }
