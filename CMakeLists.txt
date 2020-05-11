@@ -27,7 +27,14 @@ verilate(vga_test COVERAGE_TRACE
     VERILATOR_ARGS --trace -Wall -Wno-fatal -O3
     SOURCES vga.v)
 
-add_custom_target(run COMMAND vga_test)
+add_executable(cpu_test cpu_test.cpp)
+set_property(TARGET cpu_test PROPERTY CXX_STANDARD 17)
+
+verilate(cpu_test COVERAGE_TRACE
+    VERILATOR_ARGS --trace -Wall -O3
+    SOURCES cpu.v)
+
+add_custom_target(run COMMAND cpu_test)
 
 if (${SYNTHESIZE})
     add_custom_command(

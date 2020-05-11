@@ -10,7 +10,9 @@ reg [$clog2(BAUD_DIVIDE)-1:0] div = 0;
 reg [3:0] state = 0;
 reg [7:0] data = 8'h00;
 
+/* verilator lint_off WIDTH */
 wire txclk = (div == BAUD_DIVIDE);
+/* verilator lint_on WIDTH */
 
 assign rdy = (state == 0);
 
