@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "verilated_vcd_c.h"
 
 class Frequency {

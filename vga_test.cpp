@@ -170,21 +170,17 @@ TEST_CASE ("Sync timing") {
         { false, frameTime + vPulseReleaseTime, pixelSlack },
     });
 
-    std::cout << "Expected at 15.8ms = " << HSyncChecker.getExpectation(15.801e-3) << std::endl;
-
     for (uint64_t tickCount = 0; tickCount < 2 * frameTime / sampleClock.getT(); tickCount++) {
         INFO("t = " << tickCount * sampleClock.getT() * 1e3 << "ms, v = " << int {vga.vsync});
         REQUIRE(HSyncChecker.update(vga.hsync, tickCount * sampleClock.getT()) == std::nullopt);
         REQUIRE(VSyncChecker.update(vga.vsync, tickCount * sampleClock.getT()) == std::nullopt);
 
         vga.eval();
-        vga.exp_vsync = VSyncChecker.getExpectation(tickCount * sampleClock.getT());
         vga.clk = 0;
         vga.eval();
         trace.dump(tickCount * 10);
 
         vga.clk = 1;
-        vga.exp_vsync = VSyncChecker.getExpectation((tickCount + 0.5) * sampleClock.getT());
         vga.eval();
         trace.dump(tickCount * 10 + 5);
     }
