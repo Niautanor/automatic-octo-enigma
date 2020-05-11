@@ -12,10 +12,10 @@ end
 
 assign hsync = x > (640 + 16) && x <= (640 + 16 + 96);
 
-reg [9:0] y = 524;
+reg [9:0] y = 523;
 always @(posedge clk) if (pixelclk && (x == 0)) begin
     y <= y + 1;
-    if (y == 524) y <= 0;
+    if (y == 523) y <= 0;
 end
 
 assign vsync = y >= (480 + 11) && y < (480 + 11 + 2);
