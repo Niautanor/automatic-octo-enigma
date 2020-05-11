@@ -1,0 +1,33 @@
+##pmod 2
+set_io hsync 95 # rd7
+set_io vsync 93 # rd5
+#set_io PMOD[6] 90 # rd3
+#set_io PMOD[7] 87 # rd1
+#
+##pmod 3 GPIO
+#set_io PMOD[8] 105 # c5
+#set_io PMOD[9] 102 # c3
+#set_io PMOD[10] 99 # c1
+#set_io PMOD[11] 97 # i_tx
+#
+##pmod 4
+#set_io PMOD[12] 104 # c4
+#set_io PMOD[13] 101 # c2
+#set_io PMOD[14] 98 # c0
+#set_io PMOD[15] 96 # i_rx
+#
+##pmod 5 GPIO
+#set_io PMOD[16] 143 #g2
+#set_io PMOD[17] 114 #c11
+#set_io PMOD[18] 112 #c9
+#set_io PMOD[19] 107 #c7
+
+##pmod 6 GPIO
+#set_io PMOD[20] 144 #G1
+#set_io PMOD[21] 113 #C10
+#set_io PMOD[22] 110 #C8
+#set_io PMOD[23] 106 #C6
+
+# Onboard 100Mhz oscillator
+set_io clk 129
+
