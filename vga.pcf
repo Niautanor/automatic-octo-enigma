@@ -1,6 +1,6 @@
 ##pmod 2
-set_io hsync 95 # rd7
-set_io vsync 93 # rd5
+set_io hsync 94 # rd7
+set_io vsync 95 # rd5
 #set_io PMOD[6] 90 # rd3
 #set_io PMOD[7] 87 # rd1
 #
