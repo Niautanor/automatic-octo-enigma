@@ -1,0 +1,10 @@
+set_io clk 129
+
+set_io r[0] 87
+set_io r[1] 85
+
+set_io g[0] 90
+set_io g[1] 88
+
+set_io b[0] 93
+set_io b[1] 91
