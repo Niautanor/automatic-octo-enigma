@@ -1,4 +1,4 @@
 #!/bin/bash
-yosys -p "synth_ice40 -blif $1.blif" $1.v && \
-arachne-pnr -d 8k -P tq144:4k -p $1.pcf $1.blif -o $1.txt && \
+yosys -p "synth_ice40 -json $1.json" $1.v && \
+nextpnr-ice40 --json $1.json --freq 100 --hx8k --package tq144:4k --pcf $1.pcf --asc $1.txt && \
 icepack $1.txt $1.bin
