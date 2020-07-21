@@ -21,9 +21,11 @@ assign vsync = y >= (480 + 11) & y < (480 + 11 + 2);
 reg [5:0] memory[0:127][0:127];
 initial $readmemh("data/image.hex", memory);
 
+reg [5:0] pixel_next;
 reg [5:0] pixel;
 always @(posedge clk) begin
-    pixel <= memory[x_next][y_next];
+    pixel_next <= memory[y_next[7:1]][x_next[7:1]];
+    if (pixelclk) pixel <= (x < 256 & y < 256) ? pixel_next : 0;
 end
 
 assign r = (x < 640 & y < 480) ? pixel[5:4] : 0;
