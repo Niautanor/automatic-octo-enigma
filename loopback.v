@@ -7,6 +7,14 @@ module loopback(input clk, input rx, output tx, output [3:0] leds);
 
 localparam BAUD = 9600;
 
+reg rx0 = 1;
+reg rx1 = 1;
+
+always @(posedge clk) begin
+    rx0 <= rx;
+    rx1 <= rx0;
+end
+
 wire rx_ready;
 wire [7:0] rx_data;
 wire tx_ready;
@@ -26,7 +34,7 @@ assign leds[1] = rx_ready;
 assign leds[2] = tx_ready;
 assign leds[3] = fifo[0];
 
-uart_rx #(.BAUD(BAUD)) rx_ctl (.clk(clk), .data_ready(rx_ready), .data(rx_data), .rx(rx));
+uart_rx #(.BAUD(BAUD)) rx_ctl (.clk(clk), .data_ready(rx_ready), .data(rx_data), .rx(rx1));
 uart_tx #(.BAUD(BAUD)) tx_ctl (.clk(clk), .rst(0), .en(fifo_avail), .data_in(rx_data), .rdy(tx_ready), .tx(tx));
 
 endmodule
