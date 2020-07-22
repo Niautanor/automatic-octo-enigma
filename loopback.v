@@ -1,6 +1,8 @@
 `include "uart_tx.v"
 `include "uart_rx.v"
 
+`default_nettype none
+
 module loopback(input clk, input rx, output tx, output reg [3:0] leds);
 
 localparam BAUD = 9600;
