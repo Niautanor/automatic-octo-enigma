@@ -5,7 +5,7 @@ parameter BAUD 		= 115200;
 
 localparam BAUD_DIVIDE  = MAIN_CLK/BAUD;
 
-reg [$clog2(BAUD_DIVIDE)-1:0] div = 0;
+reg [$clog2(BAUD_DIVIDE+1)-1:0] div = 0;
 
 reg [3:0] state = 0;
 reg [7:0] data = 8'h00;
@@ -14,7 +14,8 @@ reg [7:0] data = 8'h00;
 wire txclk = (div == BAUD_DIVIDE);
 /* verilator lint_on WIDTH */
 
-assign rdy = (state == 0);
+wire idle = (state == 0);
+assign rdy = !en & idle;
 
 always @(state) begin
     case (state)
@@ -30,11 +31,11 @@ always @(posedge clk) begin
         div <= 0;
         state <= 0;
     end else begin
-        if (rdy && en) begin
+        if (idle && en) begin
             div <= 0;
             state <= 1;
             data <= data_in;
-        end else if (!rdy && txclk) begin
+        end else if (!idle && txclk) begin
             div <= 0;
             if (state < 10) begin
                 state <= state + 1;

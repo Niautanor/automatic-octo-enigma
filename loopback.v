@@ -1,5 +1,6 @@
 `include "uart_tx.v"
 `include "uart_rx.v"
+`include "to_hex.v"
 
 `default_nettype none
 
