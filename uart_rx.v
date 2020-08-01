@@ -8,7 +8,7 @@ parameter BAUD 		= 115200;
 
 localparam BAUD_DIVIDE  = MAIN_CLK/BAUD;
 
-reg [$clog2(BAUD_DIVIDE)-1:0] div = 0;
+reg [$clog2(BAUD_DIVIDE+1)-1:0] div = 0;
 reg lastrx = 0;
 reg idle = 1;
 reg [3:0] bitcnt = 0;
