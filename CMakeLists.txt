@@ -38,19 +38,19 @@ add_custom_target(run COMMAND cpu_test)
 
 if (${SYNTHESIZE})
     add_custom_command(
-        OUTPUT vga_fpga.blif
+        OUTPUT cpu_fpga.json
         COMMAND ${CMAKE_COMMAND} -E echo "-- Synthesizing Design"
-        COMMAND yosys -q -p "synth_ice40 -blif vga_fpga.blif" ${CMAKE_CURRENT_SOURCE_DIR}/vga.v
-        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/vga.v)
+        COMMAND yosys -q -p "synth_ice40 -json cpu_fpga.json" ${CMAKE_CURRENT_SOURCE_DIR}/cpu.v
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/cpu.v)
     add_custom_command(
-        OUTPUT vga_fpga.txt
+        OUTPUT cpu_fpga.txt
         COMMAND ${CMAKE_COMMAND} -E echo "-- Placing and Routing"
-        COMMAND arachne-pnr -q -d 8k -P tq144:4k -p ${CMAKE_CURRENT_SOURCE_DIR}/vga.pcf vga_fpga.blif -o vga_fpga.txt
-        DEPENDS vga_fpga.blif ${CMAKE_CURRENT_SOURCE_DIR}/vga.pcf)
+        COMMAND nextpnr-ice40 --hx8k --package tq144:4k --pcf ${CMAKE_CURRENT_SOURCE_DIR}/cpu.pcf --json cpu_fpga.json --asc cpu_fpga.txt
+        DEPENDS cpu_fpga.json ${CMAKE_CURRENT_SOURCE_DIR}/cpu.pcf)
     add_custom_command(
-        OUTPUT vga_fpga.bin
+        OUTPUT cpu_fpga.bin
         COMMAND ${CMAKE_COMMAND} -E echo "-- Running icepack"
-        COMMAND icepack vga_fpga.txt vga_fpga.bin
-        DEPENDS vga_fpga.txt)
-    add_custom_target(vga_fpga ALL DEPENDS vga_fpga.bin)
+        COMMAND icepack cpu_fpga.txt cpu_fpga.bin
+        DEPENDS cpu_fpga.txt)
+    add_custom_target(cpu_fpga ALL DEPENDS cpu_fpga.bin)
 endif()
