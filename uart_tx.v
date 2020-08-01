@@ -1,4 +1,4 @@
-module uart_tx (input clk, input rst, input en, input [7:0] data_in, output rdy, output reg tx);
+module uart_tx (input clk, input en, input [7:0] data_in, output reg ack, output reg tx);
 
 parameter MAIN_CLK	= 100000000;
 parameter BAUD 		= 115200;
@@ -15,7 +15,8 @@ wire txclk = (div == BAUD_DIVIDE);
 /* verilator lint_on WIDTH */
 
 wire idle = (state == 0);
-assign rdy = !en & idle;
+
+initial ack = 0;
 
 always @(state) begin
     case (state)
@@ -27,24 +28,22 @@ always @(state) begin
 end
 
 always @(posedge clk) begin
-    if (rst) begin
+    ack <= 0;
+
+    if (idle && en) begin
         div <= 0;
-        state <= 0;
-    end else begin
-        if (idle && en) begin
-            div <= 0;
-            state <= 1;
-            data <= data_in;
-        end else if (!idle && txclk) begin
-            div <= 0;
-            if (state < 10) begin
-                state <= state + 1;
-            end else begin
-                state <= 0; // go back to idle
-            end
+        state <= 1;
+        data <= data_in;
+        ack <= 1;
+    end else if (!idle && txclk) begin
+        div <= 0;
+        if (state < 10) begin
+            state <= state + 1;
         end else begin
-            div <= div + 1;
+            state <= 0; // go back to idle
         end
+    end else begin
+        div <= div + 1;
     end
 end
 
