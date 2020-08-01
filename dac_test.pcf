@@ -1,5 +1,4 @@
-set_io hsync 94 # rd7
-set_io vsync 95 # rd5
+set_io clk 129
 
 set_io r[0] 87
 set_io r[1] 85
@@ -9,7 +8,3 @@ set_io g[1] 88
 
 set_io b[0] 93
 set_io b[1] 91
-
-# Onboard 100Mhz oscillator
-set_io clk 129
-

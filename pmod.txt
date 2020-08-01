@@ -1,0 +1,4 @@
+            TOP
+VCC(-) GND(-) RMSB (P3 -> 85) GMSB (P2 -> 88) BMSB(P1 -> 91) HSYNC(P0 -> 94)
+VCC(-) GND(-) RLSB (P7 -> 87) GLSB (P6 -> 90) BLSB(P5 -> 93) VSYNC(P4 -> 95)
+           BOTTOM
