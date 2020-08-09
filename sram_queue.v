@@ -13,11 +13,16 @@ module sram_queue(
     input sram_rd_data_vld,
     output [17:0] sram_addr,
     output reg [15:0] sram_wr_data,
-    output [7:0] tx_data,
-    output tx_en,
+    output reg [7:0] tx_data,
+    output reg tx_en,
     input tx_ack);
 
 initial rx_overflow = 0;
+
+initial tx_data = 0;
+reg [7:0] tx_data_nxt;
+initial tx_en = 0;
+reg tx_en_nxt;
 
 reg state = 0;
 reg state_nxt;
@@ -28,13 +33,10 @@ reg [17:0] wraddr_nxt;
 reg [17:0] rdaddr_nxt;
 
 assign sram_addr = state ? rdaddr : wraddr;
-assign tx_data = sram_rd_data[7:0];
 
 reg rx_overflow_nxt;
 
 wire newline = (rx_data == "\n");
-
-assign tx_en = sram_rd_data_vld;
 
 reg tx_ready = 1;
 reg tx_ready_nxt;
@@ -49,6 +51,9 @@ wire sram_busy = sram_req & !sram_ready;
 initial sram_wr_data = 0;
 reg [15:0] sram_wr_data_nxt;
 
+reg sram_read_phase = 0;
+reg sram_read_phase_nxt;
+
 always @(*) begin
     state_nxt = state;
     wraddr_nxt = wraddr;
@@ -57,6 +62,14 @@ always @(*) begin
     tx_ready_nxt = tx_ready;
     sram_req_nxt = sram_req;
     sram_wr_data_nxt = sram_wr_data;
+    sram_read_phase_nxt = sram_read_phase;
+    tx_en_nxt = tx_en;
+    tx_data_nxt = tx_data;
+
+    if (tx_ack) begin
+        tx_ready_nxt = 1;
+        tx_en_nxt = 0;
+    end
 
     if (state == 0) begin
         sram_rd = 0;
@@ -81,11 +94,17 @@ always @(*) begin
         end
     end else begin
         sram_rd = 1;
-        if (tx_ack) tx_ready_nxt = 1;
         if (tx_ready) begin
-            if (sram_ready) begin
+            if ((sram_read_phase == 0) & !sram_busy) begin
+                sram_req_nxt = 1;
+                sram_read_phase_nxt = 1;
+            end
+            if (sram_ready) sram_req_nxt = 0;
+            if ((sram_read_phase == 1) & sram_rd_data_vld) begin
+                tx_en_nxt = 1;
+                tx_data_nxt = sram_rd_data[7:0];
+                sram_read_phase_nxt = 0;
                 tx_ready_nxt = 0;
-                sram_req = 1;
                 rdaddr_nxt = rdaddr + 1;
                 if (rdaddr_nxt == wraddr) begin
                     state_nxt = 0;
@@ -105,6 +124,9 @@ always @(posedge clk) begin
     tx_ready <= tx_ready_nxt;
     sram_req <= sram_req_nxt;
     sram_wr_data <= sram_wr_data_nxt;
+    sram_read_phase <= sram_read_phase_nxt;
+    tx_en <= tx_en_nxt;
+    tx_data <= tx_data_nxt;
 end
 
 endmodule
