@@ -54,8 +54,10 @@ initial sram_rd = 0;
 initial sram_addr = 0;
 initial sram_wr_data = 0;
 
-wire acceptable_write = aw_valid & w_valid & !sram_req;
-wire acceptable_read = ar_valid & !sram_req;
+reg transaction_in_flight = 0;
+
+wire acceptable_write = aw_valid & w_valid & !sram_req & !transaction_in_flight;
+wire acceptable_read = ar_valid & !sram_req & !transaction_in_flight;
 
 always @(posedge a_clk) begin
     // reset driven valid/ready signals unless they are set again later down
@@ -64,11 +66,19 @@ always @(posedge a_clk) begin
     // a transaction by one cycle
     aw_ready <= 0;
     w_ready <= 0;
-    if (b_ready) b_valid <= 0;
+    if (b_ready) begin
+        if (b_valid) transaction_in_flight <= 0;
+        b_valid <= 0;
+    end
     ar_ready <= 0;
-    if (r_ready) r_valid <= 0;
+    if (r_ready) begin
+        if (r_valid) transaction_in_flight <= 0;
+        r_valid <= 0;
+    end
 
     if (acceptable_write) begin
+        transaction_in_flight <= 1;
+
         aw_ready <= 1;
         w_ready <= 1;
 
@@ -80,7 +90,12 @@ always @(posedge a_clk) begin
         sram_wr_data <= w_data;
     end
     if (acceptable_read) begin
+        transaction_in_flight <= 1;
+
         ar_ready <= 1;
+        // need to undo accepting the write transaction if there was one
+        aw_ready <= 0;
+        w_ready <= 0;
 
         sram_rd <= 1;
         sram_req <= 1;
