@@ -68,8 +68,8 @@ initial sram_rd = 0;
 initial sram_addr = 0;
 initial sram_wr_data = 0;
 
-wire acceptable_write = aw_valid & w_valid & !sram_req;
-wire acceptable_read = ar_valid & !sram_req;
+wire acceptable_write = aw_valid & w_valid & !sram_req & !(b_valid & !b_ready);
+wire acceptable_read = ar_valid & !sram_req & !(r_valid & !r_ready);
 
 always @(posedge a_clk) begin
     // reset driven valid/ready signals unless they are set again later down
@@ -127,14 +127,21 @@ end
     // some kind of liveness property that says that the (zero transactions in
     // flight) state should be reachable from everywhere but I won't bother with
     // that for now.
-    integer ar_in_flight = 0;
+    reg [2:0] ar_in_flight = 0;
+    wire accepted_ar = ar_valid & ar_ready;
+    wire accepted_r = r_valid & r_ready;
     always @(posedge a_clk) begin
-        if (ar_valid & ar_ready) ar_in_flight <= ar_in_flight + 1;
+        if (accepted_ar) ar_in_flight <= ar_in_flight + 1;
 
-        if (r_valid & r_ready) begin
+        if (accepted_r) begin
             assert(ar_in_flight > 0);
             ar_in_flight <= ar_in_flight - 1;
         end
+
+        if (accepted_ar & accepted_r) ar_in_flight <= ar_in_flight;
+
+        if (past_valid & $past(r_valid) & !r_valid)
+            assert($past(r_ready));
     end
 
     // integer aw_in_flight = 0;
@@ -144,7 +151,40 @@ end
 
     always @(*) begin
         assert(!read_overflow);
-        assert(ar_in_flight < 6);
+        assert(ar_in_flight < 4);
+    end
+`endif
+
+// sram properties.
+// TODO: put in a separate file and verify the sram driver as well
+`ifdef FORMAL
+    reg past_valid1 = 0, past_valid2 = 0, past_valid3 = 0;
+    always @(posedge a_clk) begin
+        past_valid1 <= past_valid;
+        past_valid2 <= past_valid1;
+        past_valid3 <= past_valid2;
+    end
+    always @(posedge a_clk) begin
+        if (past_valid3 & $past(sram_req & sram_rd & sram_ready, 4))
+            assume(sram_rd_data_vld);
+        if (sram_rd_data_vld)
+            assume(past_valid3 & $past(sram_req & sram_rd & sram_ready, 4));
+        if (sram_ready)
+            assume(sram_req);
+    end
+`endif
+
+// sram master properties
+`ifdef FORMAL
+    always @(posedge a_clk) begin
+        // if *_valid is asserted, it cannot be deasserted until *_ready is
+        // asserted
+        if (past_valid & $past(ar_valid) & !ar_valid)
+            assume($past(ar_ready));
+        if (past_valid & $past(aw_valid) & !aw_valid)
+            assume($past(aw_ready));
+        if (past_valid & $past(w_valid) & !w_valid)
+            assume($past(w_ready));
     end
 `endif
 
