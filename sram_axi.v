@@ -32,7 +32,7 @@ module sram_axi(
     // read data channel
     output r_valid,
     input r_ready,
-    output reg [15:0] r_data,
+    output [15:0] r_data,
     output [1:0] r_resp,
     // sram control signals
     output reg sram_req,
