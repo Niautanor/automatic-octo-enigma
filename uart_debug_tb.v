@@ -79,6 +79,7 @@ uart_debug debug(
     // axi write response channel
 );
 
+`ifdef SRAM
 wire aw_ready;
 wire w_ready;
 wire b_valid;
@@ -167,5 +168,49 @@ sram_top sram(
 // sram emulation: on read => DAT = lower 16 bits of ADR
 assign DAT[7:0]  = (!RAMCS && !RAMOE && RAMWE && !RAMLB) ? ADR[7:0] : {8{1'bz}};
 assign DAT[15:8] = (!RAMCS && !RAMOE && RAMWE && !RAMUB) ? ADR[15:8] : {8{1'bz}};
+`else
+wire aw_ready;
+wire w_ready;
+wire b_valid;
+wire [1:0] b_resp;
+wire [1:0] r_resp;
+wire sram_req;
+wire sram_ready;
+wire sram_rd;
+wire [17:0] sram_addr;
+wire [1:0] sram_be;
+wire [15:0] sram_wr_data;
+wire sram_rd_data_vld;
+wire [15:0]sram_rd_data;
+bram_axi axi(
+    // global
+    .a_clk(clk),
+    .a_rst(1'b1),
+    // write address channel
+    .aw_valid(1'b0),
+    .aw_ready(aw_ready),
+    .aw_addr(18'h000),
+    .aw_prot(1'b0),
+    // write data channel
+    .w_valid(1'b0),
+    .w_ready(w_ready),
+    .w_data(16'h00),
+    .w_strb(2'b00),
+    // write response channel
+    .b_valid(b_valid),
+    .b_ready(1'b0),
+    .b_resp(b_resp),
+    // read address channel
+    .ar_valid(axi_ar_valid),
+    .ar_ready(axi_ar_ready),
+    .ar_addr(axi_ar_addr),
+    .ar_prot(1'b0),
+    // read data channel
+    .r_valid(axi_r_valid),
+    .r_ready(axi_r_ready),
+    .r_data(axi_r_data),
+    .r_resp(r_resp)
+);
+`endif
 
 endmodule
