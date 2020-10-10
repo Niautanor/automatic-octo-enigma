@@ -1,39 +1,12 @@
-`include "to_hex.v"
-`include "uart_tx.v"
+`include "loopback.v"
 
-module loopback_tb(input clk, input [7:0] rx_data, input rx_en, output overflow, output tx);
+module loopback_tb(input clk, input [7:0] rx_data, input rx_valid, output rx_ready, output [3:0] leds, output tx);
 
-wire tx_ack;
-wire tx_en;
-wire [7:0] tx_data;
-wire [7:0] hexin_data;
-wire hexin_en;
-wire hexin_ack;
+parameter BAUD = 10000;
 
-uart_tx #(.MAIN_CLK(1), .BAUD(1)) tx_ctl(
-    .clk(clk),
-    .rst(1'b0),
-    .en(tx_en),
-    .ack(tx_ack),
-    .data_in(tx_data),
-    .tx(tx));
+wire rx;
+uart_tx #(.BAUD(BAUD)) tx_inst(.clk(clk), .data_in(rx_data), .data_in_valid(rx_valid), .data_in_ready(rx_ready), .tx(rx));
 
-to_hex hex(
-    .clk(clk),
-    .rx_data(hexin_data),
-    .rx_rdy(hexin_en),
-    .rx_ack(hexin_ack),
-    .tx_ack(tx_ack),
-    .tx_en(tx_en),
-    .tx_data(tx_data));
-
-queue q(
-    .clk(clk),
-    .in_data(rx_data),
-    .in_en(rx_en),
-    .overflow(overflow),
-    .out_available(hexin_en),
-    .out_data(hexin_data),
-    .out_ack(hexin_ack));
+loopback #(.BAUD(BAUD)) loopback_inst(.clk(clk), .rx(rx), .tx(tx), .leds(leds));
 
 endmodule
