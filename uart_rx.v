@@ -1,7 +1,11 @@
-module uart_rx(input clk, input rx, output reg data_ready, output reg [7:0] data);
+`default_nettype none
 
-initial data_ready = 0;
+module uart_rx(input clk, input rx, output reg [7:0] data, output reg data_valid, input data_ready, output reg overflow);
+
+initial overflow = 0;
+initial data_valid = 0;
 initial data = 0;
+reg [7:0] sr = 0;
 
 parameter MAIN_CLK	= 100000000;
 parameter BAUD 		= 115200;
@@ -15,13 +19,13 @@ reg [3:0] bitcnt = 0;
 
 always @(posedge clk) begin
     lastrx <= rx;
+    if (data_ready) data_valid <= 0;
     if (idle) begin
-        data_ready <= 0;
         if (!rx && lastrx) begin
             idle <= 0;
             div <= 0;
             bitcnt <= 0;
-            data <= 0;
+            sr <= 0;
         end
     end else begin
         div <= div + 1;
@@ -38,11 +42,13 @@ always @(posedge clk) begin
                 if (!rx) begin
                     // wrong end bit -> ignore
                 end else begin
-                    data_ready <= 1;
+                    data_valid <= 1;
+                    data <= sr;
+                    if (data_valid & !data_ready) overflow <= 1;
                 end
             end else begin
                 // shift in data
-                data <= {rx, data[7:1]};
+                sr <= {rx, sr[7:1]};
             end
         end else if (div == BAUD_DIVIDE) begin
             div <= 0;
