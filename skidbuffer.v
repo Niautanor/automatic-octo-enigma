@@ -28,16 +28,19 @@ always @(posedge clk) begin
     // if in_valid => shift and increase size
     // if both => shift and maintain size
     // if none => nothing
-    if (out_valid | in_valid) begin
+    if (out_ready && out_valid) begin
         for (i=0;i<FIFO_DEPTH-1;i=i+1) begin
             queue[i] <= queue[i+1];
         end
-        queue[FIFO_DEPTH-1] <= in_data;
+        if (!empty)
+            size <= size - 1;
     end
-    if (out_ready & !empty) size <= size - 1;
     if (in_valid) begin
         if (full) overflow <= 1;
-        if (!full) size <= size + 1;
+        if (!full) begin
+            size <= size + 1;
+            queue[size] <= in_data;
+        end
     end
     if (out_ready & in_valid) begin
         overflow <= overflow;
@@ -45,9 +48,10 @@ always @(posedge clk) begin
     end
 end
 
-reg past_valid = 0;
-always @(posedge clk) past_valid <= 1;
 `ifdef FORMAL
+    reg past_valid = 0;
+    always @(posedge clk) past_valid <= 1;
+
     always @(*) begin
         assert(size <= FIFO_DEPTH);
         if (size == 0) begin
@@ -64,6 +68,16 @@ always @(posedge clk) past_valid <= 1;
             assert(past_valid & $past(full & in_valid & !out_ready));
         if (past_valid & $past(full & in_valid & !out_ready))
             assert(overflow);
+    end
+    always @(posedge clk) begin
+        if (past_valid & $past(out_valid) & out_valid)
+            assert($stable(out_data) | $past(out_ready));
+    end
+
+    reg f_was_full = 0;
+    always @(posedge clk) if (full) f_was_full <= 1;
+    always @(posedge clk) begin
+        cover(f_was_full & empty);
     end
 `endif
 

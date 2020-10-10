@@ -1,19 +1,14 @@
 [options]
 mode bmc
-depth 40
+depth 20
 
 [engines]
 smtbmc z3
 
 [script]
-read -formal sram_axi_top.v sram_axi.v skidbuffer.v sram_ctrl.v sram_io_ice40.v sram_top.v cells_sim.v
-prep -top sram_axi_top
+read -formal sram_axi.v skidbuffer.v
+prep -top sram_axi
 
 [files]
-sram_axi_top.v
 sram_axi.v
 skidbuffer.v
-../BlackIce-II/examples/sram/src/sram_ctrl.v
-../BlackIce-II/examples/sram/src/sram_io_ice40.v
-../BlackIce-II/examples/sram/src/sram_top.v
-/usr/share/yosys/ice40/cells_sim.v

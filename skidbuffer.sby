@@ -1,6 +1,11 @@
+[tasks]
+prove
+cover
+
 [options]
-mode bmc
-depth 20
+prove: mode prove
+cover: mode cover
+depth 12
 
 [engines]
 smtbmc z3
