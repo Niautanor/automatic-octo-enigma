@@ -18,10 +18,12 @@ initial uart_rx_ready = 1;
 initial uart_tx_valid = 0;
 
 initial axi_ar_valid = 0;
+initial axi_ar_addr = 0;
 initial axi_r_ready = 0;
 
 reg [23:0] command_reg = 0;
 reg [7:0] uart_tx_next = 0;
+initial uart_tx = 0;
 
 integer state = 0;
 always @(posedge clk) begin

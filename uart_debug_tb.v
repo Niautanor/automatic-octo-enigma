@@ -5,10 +5,10 @@ module uart_debug_tb;
 
 reg [17:0] addresses_to_read [0:3];
 initial begin
-    addresses_to_read[0] = 18'h348;
-    addresses_to_read[1] = 18'h000;
-    addresses_to_read[2] = 18'h3ff;
-    addresses_to_read[3] = 18'h155;
+    addresses_to_read[0] = 18'h37648;
+    addresses_to_read[1] = 18'h00000;
+    addresses_to_read[2] = 18'h3ffff;
+    addresses_to_read[3] = 18'h1aa55;
 end
 reg [2:0] next_address = 4;
 
@@ -44,6 +44,8 @@ always @(posedge clk) begin
                 next_address <= next_address + 1;
             end
         end
+    end else begin
+        uart_rx_valid <= 0;
     end
 end
 
