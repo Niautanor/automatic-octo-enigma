@@ -1,29 +1,23 @@
+`default_nettype none
 `timescale 1ns/1ns
 
 module test;
 
 reg [7:0] next_data = 8'h41;
-reg en = 0;
-wire rdy;
+reg data_valid = 1;
+wire data_ready;
 
 always @(posedge clk) begin
-    if (rdy) begin
-        en <= 1;
-    end else begin
-        if (en) begin
-            if (next_data == 8'h57)
-                next_data <= 8'h41;
-            else
-                next_data <= next_data + 1;
-        end
-        en <= 0;
+    if (data_ready) begin
+        if (next_data == 8'h57)
+            next_data <= 8'h41;
+        else
+            next_data <= next_data + 1;
     end
 end
 
-reg rst = 0;
 initial begin
-    rst = 1;
-    #200 rst = 0;
+    #100000 data_valid = 0;
     #500000 $finish;
 
 end
@@ -32,7 +26,12 @@ reg clk = 0;
 always #5 clk = !clk;
 
 wire tx;
-uart_tx uart(clk, rst, en, next_data, rdy, tx);
+uart_tx #(.MAIN_CLK(4), .BAUD(1)) uart(
+    .clk(clk),
+    .data_in(next_data),
+    .data_in_valid(data_valid),
+    .data_in_ready(data_ready),
+    .tx(tx));
 
 initial begin
     $dumpfile("test.vcd");

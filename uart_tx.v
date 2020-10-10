@@ -1,4 +1,6 @@
-module uart_tx (input clk, input en, input [7:0] data_in, output reg ack, output reg tx);
+`default_nettype none
+
+module uart_tx (input clk, input [7:0] data_in, input data_in_valid, output data_in_ready, output reg tx);
 
 parameter MAIN_CLK	= 100000000;
 parameter BAUD 		= 115200;
@@ -16,29 +18,29 @@ wire txclk = (div == BAUD_DIVIDE);
 
 wire idle = (state == 0);
 
-initial ack = 0;
-
 always @(state) begin
     case (state)
         0: tx = 1; // idle
         1: tx = 0; // start bit
-        10: tx = 1; // pause between bytes to allow for resync because I'm a pussy :P
+        10: tx = 1; // stop bit
         default: tx = data[state-2];
     endcase
 end
 
-always @(posedge clk) begin
-    ack <= 0;
+assign data_in_ready = idle | (txclk & (state == 10));
 
-    if (idle && en) begin
+always @(posedge clk) begin
+    if (idle && data_in_valid) begin
         div <= 0;
         state <= 1;
         data <= data_in;
-        ack <= 1;
     end else if (!idle && txclk) begin
         div <= 0;
         if (state < 10) begin
             state <= state + 1;
+        end else if (data_in_valid) begin
+            state <= 1;
+            data <= data_in;
         end else begin
             state <= 0; // go back to idle
         end
