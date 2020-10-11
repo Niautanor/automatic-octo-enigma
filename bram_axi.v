@@ -30,12 +30,15 @@ module bram_axi(
     output reg [1:0] r_resp
 );
 
-reg [15:0] memory[0:2**18-1];
+reg [15:0] memory[0:4095];
 initial begin
-    memory[18'h37648] = 15'h55aa;
-    memory[18'h00000] = 16'habcd;
-    memory[18'h3ffff] = 16'hbabe;
-    memory[18'h2aa55] = 16'hc0fe;
+    $readmemh("bee.hex", memory);
+    /*
+    memory[12'h648] = 16'h55aa;
+    memory[12'h000] = 16'habcd;
+    memory[12'hfff] = 16'hbabe;
+    memory[12'ha55] = 16'hc0fe;
+    */
 end
 
 initial aw_ready = 0;
@@ -45,7 +48,6 @@ initial b_resp = 2'b00;
 
 initial ar_ready = 0;
 initial r_valid = 0;
-initial r_data = 16'h0000;
 initial r_resp = 2'b00;
 
 reg read_accepted = 0;
@@ -53,7 +55,7 @@ always @(posedge a_clk) begin
     if (ar_valid & !read_accepted) begin
         read_accepted <= 1;
         ar_ready <= 1;
-        r_data <= memory[ar_addr];
+        r_data <= memory[ar_addr[11:0]];
         r_valid <= 1;
     end
     if (ar_valid & ar_ready) ar_ready <= 0;

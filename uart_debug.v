@@ -1,7 +1,7 @@
 module uart_debug(
     input clk,
     // uart rx
-    input [7:0] uart_rx, input uart_rx_valid, output reg uart_rx_ready, 
+    input [7:0] uart_rx, input uart_rx_valid, output reg uart_rx_ready,
     // uart tx
     output reg [7:0] uart_tx, output reg uart_tx_valid, input uart_tx_ready,
     // TODO: add response signals / masks / prot / whatever
@@ -40,7 +40,7 @@ always @(posedge clk) begin
             command_reg[7:0] <= uart_rx;
             uart_rx_ready <= 0;
             axi_ar_valid <= 1;
-            axi_ar_addr <= {command_reg[17:8], uart_rx}; 
+            axi_ar_addr <= {command_reg[17:8], uart_rx};
             state <= 3;
         end
         3: if (axi_ar_ready) begin
