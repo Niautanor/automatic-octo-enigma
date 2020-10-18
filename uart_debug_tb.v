@@ -3,14 +3,38 @@
 
 module uart_debug_tb;
 
-reg [17:0] addresses_to_read [0:3];
+reg [7:0] uart_in [0:21];
 initial begin
-    addresses_to_read[0] = 18'h37648;
-    addresses_to_read[1] = 18'h00000;
-    addresses_to_read[2] = 18'h3ffff;
-    addresses_to_read[3] = 18'h1aa55;
+    uart_in[ 0] = 8'h03;
+    uart_in[ 1] = 8'h76;
+    uart_in[ 2] = 8'h48;
+    uart_in[ 3] = 8'h01;
+    uart_in[ 4] = 8'h02;
+    uart_in[ 5] = 8'h04;
+    uart_in[ 6] = 8'h83;
+    uart_in[ 7] = 8'hff;
+    uart_in[ 8] = 8'hff;
+    uart_in[ 9] = 8'haa;
+    uart_in[10] = 8'h55;
+    uart_in[11] = 8'h83;
+    uart_in[12] = 8'h76;
+    uart_in[13] = 8'h48;
+    uart_in[14] = 8'hde;
+    uart_in[15] = 8'had;
+    uart_in[16] = 8'h00;
+    uart_in[17] = 8'h00;
+    uart_in[18] = 8'h00;
+    uart_in[19] = 8'h03;
+    uart_in[20] = 8'h76;
+    uart_in[21] = 8'h48;
 end
-reg [2:0] next_address = 4;
+integer next_address = 22;
+
+reg [15:0] write_data [0:1];
+initial begin
+    write_data[0] = 16'haa55;
+    write_data[0] = 16'hdead;
+end
 
 reg clk = 0;
 always #5 clk = !clk;
@@ -28,21 +52,12 @@ end
 reg uart_rx_valid = 0;
 reg [7:0] uart_rx_data = 0;
 wire uart_rx_ready;
-reg [2:0] reg_state = 0;
 always @(posedge clk) begin
-    if (next_address < 4) begin
+    if (next_address < 22) begin
         uart_rx_valid <= 1;
-        case (reg_state)
-            0: uart_rx_data <= {6'b000000, addresses_to_read[next_address[1:0]][17:16]};
-            1: uart_rx_data <= addresses_to_read[next_address[1:0]][15:8];
-            2: uart_rx_data <= addresses_to_read[next_address[1:0]][7:0];
-        endcase
         if (uart_rx_ready) begin
-            if (reg_state < 2) reg_state <= reg_state + 1;
-            else begin
-                reg_state <= 0;
-                next_address <= next_address + 1;
-            end
+            uart_rx_data <= uart_in[next_address];
+            next_address <= next_address + 1;
         end
     end else begin
         uart_rx_valid <= 0;
@@ -63,6 +78,14 @@ wire axi_ar_ready;
 wire [15:0] axi_r_data;
 wire axi_r_valid;
 wire axi_r_ready;
+wire [17:0] axi_aw_addr;
+wire axi_aw_valid;
+wire axi_aw_ready;
+wire [15:0] axi_w_data;
+wire axi_w_valid;
+wire axi_w_ready;
+wire axi_b_valid;
+wire axi_b_ready;
 uart_debug debug(
     .clk(clk),
     // uart rx
@@ -73,16 +96,16 @@ uart_debug debug(
     // axi read address channel
     .axi_ar_addr(axi_ar_addr), .axi_ar_valid(axi_ar_valid), .axi_ar_ready(axi_ar_ready),
     // axi read response channel
-    .axi_r_data(axi_r_data), .axi_r_valid(axi_r_valid), .axi_r_ready(axi_r_ready)
+    .axi_r_data(axi_r_data), .axi_r_valid(axi_r_valid), .axi_r_ready(axi_r_ready),
     // axi write address channel
+    .axi_aw_addr(axi_aw_addr), .axi_aw_valid(axi_aw_valid), .axi_aw_ready(axi_aw_ready),
     // axi write data channel
+    .axi_w_data(axi_w_data), .axi_w_valid(axi_w_valid), .axi_w_ready(axi_w_ready),
     // axi write response channel
+    .axi_b_valid(axi_b_valid), .axi_b_ready(axi_b_ready)
 );
 
 `ifdef SRAM
-wire aw_ready;
-wire w_ready;
-wire b_valid;
 wire [1:0] b_resp;
 wire [1:0] r_resp;
 wire sram_req;
@@ -98,18 +121,18 @@ sram_axi axi(
     .a_clk(clk),
     .a_rst(1'b1),
     // write address channel
-    .aw_valid(1'b0),
-    .aw_ready(aw_ready),
-    .aw_addr(18'h000),
+    .aw_valid(axi_aw_valid),
+    .aw_ready(axi_aw_ready),
+    .aw_addr(axi_aw_addr),
     .aw_prot(1'b0),
     // write data channel
-    .w_valid(1'b0),
-    .w_ready(w_ready),
-    .w_data(16'h00),
+    .w_valid(axi_w_valid),
+    .w_ready(axi_w_ready),
+    .w_data(axi_w_data),
     .w_strb(2'b00),
     // write response channel
-    .b_valid(b_valid),
-    .b_ready(1'b0),
+    .b_valid(axi_b_valid),
+    .b_ready(axi_b_ready),
     .b_resp(b_resp),
     // read address channel
     .ar_valid(axi_ar_valid),
@@ -169,36 +192,25 @@ sram_top sram(
 assign DAT[7:0]  = (!RAMCS && !RAMOE && RAMWE && !RAMLB) ? ADR[7:0] : {8{1'bz}};
 assign DAT[15:8] = (!RAMCS && !RAMOE && RAMWE && !RAMUB) ? ADR[15:8] : {8{1'bz}};
 `else
-wire aw_ready;
-wire w_ready;
-wire b_valid;
 wire [1:0] b_resp;
 wire [1:0] r_resp;
-wire sram_req;
-wire sram_ready;
-wire sram_rd;
-wire [17:0] sram_addr;
-wire [1:0] sram_be;
-wire [15:0] sram_wr_data;
-wire sram_rd_data_vld;
-wire [15:0]sram_rd_data;
 bram_axi axi(
     // global
     .a_clk(clk),
     .a_rst(1'b1),
     // write address channel
-    .aw_valid(1'b0),
-    .aw_ready(aw_ready),
-    .aw_addr(18'h000),
+    .aw_valid(axi_aw_valid),
+    .aw_ready(axi_aw_ready),
+    .aw_addr(axi_aw_addr),
     .aw_prot(1'b0),
     // write data channel
-    .w_valid(1'b0),
-    .w_ready(w_ready),
-    .w_data(16'h00),
+    .w_valid(axi_w_valid),
+    .w_ready(axi_w_ready),
+    .w_data(axi_w_data),
     .w_strb(2'b00),
     // write response channel
-    .b_valid(b_valid),
-    .b_ready(1'b0),
+    .b_valid(axi_b_valid),
+    .b_ready(axi_b_ready),
     .b_resp(b_resp),
     // read address channel
     .ar_valid(axi_ar_valid),
