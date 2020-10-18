@@ -65,4 +65,21 @@ always @(posedge a_clk) begin
     end
 end
 
+reg write_accepted = 0;
+always @(posedge a_clk) begin
+    if (aw_valid & w_valid & !write_accepted) begin
+        write_accepted <= 1;
+        aw_ready <= 1;
+        w_ready <= 1;
+        memory[aw_addr[11:0]] <= w_data;
+        b_valid <= 1;
+    end
+    if (aw_valid & aw_ready) aw_ready <= 0;
+    if (w_valid & w_ready) w_ready <= 0;
+    if (b_valid & b_ready) begin
+        b_valid <= 0;
+        write_accepted <= 0;
+    end
+end
+
 endmodule
