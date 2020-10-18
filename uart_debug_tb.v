@@ -21,9 +21,9 @@ initial begin
     uart_in[13] = 8'h48;
     uart_in[14] = 8'hde;
     uart_in[15] = 8'had;
-    uart_in[16] = 8'h00;
-    uart_in[17] = 8'h00;
-    uart_in[18] = 8'h00;
+    uart_in[16] = 8'h03;
+    uart_in[17] = 8'hff;
+    uart_in[18] = 8'hff;
     uart_in[19] = 8'h03;
     uart_in[20] = 8'h76;
     uart_in[21] = 8'h48;

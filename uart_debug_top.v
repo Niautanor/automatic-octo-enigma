@@ -27,9 +27,17 @@ wire [7:0] tx_data;
 uart_tx #(.BAUD(BAUD)) tx_inst(.clk(clk), .tx(tx), .data_in_ready(tx_ready), .data_in_valid(tx_valid), .data_in(tx_data));
 
 wire axi_resetn = 1;
+wire axi_aw_valid;
+wire axi_aw_ready;
+wire [17:0] axi_aw_addr;
+wire axi_w_valid;
+wire axi_w_ready;
+wire [15:0] axi_w_data;
+wire axi_b_valid;
+wire axi_b_ready;
 wire axi_ar_valid;
 wire axi_ar_ready;
-wire [11:0] axi_ar_addr;
+wire [17:0] axi_ar_addr;
 wire axi_r_valid;
 wire axi_r_ready;
 wire [15:0] axi_r_data;
@@ -41,16 +49,16 @@ wire [1:0] axi_b_resp;
 bram_axi axi(
     .a_clk(clk),
     .a_rst(axi_resetn),
-    .aw_valid('0),
+    .aw_valid(axi_aw_valid),
     .aw_ready(axi_aw_ready),
-    .aw_addr('0),
+    .aw_addr(axi_aw_addr),
     .aw_prot('0),
-    .w_valid('0),
+    .w_valid(axi_w_valid),
     .w_ready(axi_w_ready),
-    .w_data('0),
+    .w_data(axi_w_data),
     .w_strb('0),
     .b_valid(axi_b_valid),
-    .b_ready('0),
+    .b_ready(axi_b_ready),
     .b_resp(axi_b_resp),
     .ar_valid(axi_ar_valid),
     .ar_ready(axi_ar_ready),
@@ -74,7 +82,16 @@ uart_debug debug(
     .axi_ar_ready(axi_ar_ready),
     .axi_r_data(axi_r_data),
     .axi_r_valid(axi_r_valid),
-    .axi_r_ready(axi_r_ready)
+    .axi_r_ready(axi_r_ready),
+    .axi_aw_addr(axi_aw_addr),
+    .axi_aw_valid(axi_aw_valid),
+    .axi_aw_ready(axi_aw_ready),
+    .axi_w_data(axi_w_data),
+    .axi_w_valid(axi_w_valid),
+    .axi_w_ready(axi_w_ready),
+    .axi_b_valid(axi_b_valid),
+    .axi_b_ready(axi_b_ready),
+    .leds(leds[3:1])
 );
 
 endmodule
