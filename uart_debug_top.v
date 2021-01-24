@@ -40,7 +40,7 @@ wire tx_valid;
 wire [7:0] tx_data;
 uart_tx #(.MAIN_CLK(MAIN_CLK), .BAUD(BAUD)) tx_inst(.clk(clk), .tx(tx), .data_in_ready(tx_ready), .data_in_valid(tx_valid), .data_in(tx_data));
 
-wire axi_resetn = 1;
+wire axi_resetn;
 wire axi_aw_valid;
 wire axi_aw_ready;
 wire [17:0] axi_aw_addr;
@@ -176,7 +176,8 @@ uart_debug debug(
     .axi_w_ready(axi_w_ready),
     .axi_b_valid(axi_b_valid),
     .axi_b_ready(axi_b_ready),
-    .leds(leds[3:1])
+    .leds(leds[3:1]),
+    .axi_resetn(axi_resetn)
 );
 
 endmodule

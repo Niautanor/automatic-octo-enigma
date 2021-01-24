@@ -7,6 +7,7 @@ module skidbuffer #(
         parameter DATA_SIZE=16,
         parameter FIFO_DEPTH = 5) (
     input clk,
+    input resetn,
     input out_ready,
     output out_valid,
     output [DATA_SIZE-1:0] out_data,
@@ -27,27 +28,32 @@ assign out_valid = !empty | in_valid;
 integer i;
 
 always @(posedge clk) begin
-    // if out_ready => shift and decrease size
-    // if in_valid => shift and increase size
-    // if both => shift and maintain size
-    // if none => nothing
-    if (out_ready && out_valid) begin
-        for (i=0;i<FIFO_DEPTH-1;i=i+1) begin
-            queue[i] <= queue[i+1];
+    if (resetn) begin
+        // if out_ready => shift and decrease size
+        // if in_valid => shift and increase size
+        // if both => shift and maintain size
+        // if none => nothing
+        if (out_ready && out_valid) begin
+            for (i=0;i<FIFO_DEPTH-1;i=i+1) begin
+                queue[i] <= queue[i+1];
+            end
+            if (!empty)
+                size <= size - 1;
         end
-        if (!empty)
-            size <= size - 1;
-    end
-    if (in_valid) begin
-        if (full) overflow <= 1;
-        if (!full) begin
-            size <= size + 1;
-            queue[size] <= in_data;
+        if (in_valid) begin
+            if (full) overflow <= 1;
+            if (!full) begin
+                size <= size + 1;
+                queue[size] <= in_data;
+            end
         end
-    end
-    if (out_ready & in_valid) begin
-        overflow <= overflow;
-        size <= size;
+        if (out_ready & in_valid) begin
+            overflow <= overflow;
+            size <= size;
+        end
+    end else begin
+        size <= 0;
+        overflow <= 0;
     end
 end
 

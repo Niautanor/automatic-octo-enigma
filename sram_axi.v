@@ -54,6 +54,7 @@ assign r_resp = 2'b00;
 wire read_overflow;
 skidbuffer #(.DATA_SIZE(16),.FIFO_DEPTH(5)) read_skidbuffer (
     .clk(a_clk),
+    .resetn(a_rst),
     .out_ready(r_ready),
     .out_valid(r_valid),
     .out_data(r_data),
@@ -75,45 +76,56 @@ wire acceptable_write = aw_valid & w_valid & !sram_req & !(b_valid & !b_ready);
 wire acceptable_read = ar_valid & !sram_req & !(r_valid & !r_ready);
 
 always @(posedge a_clk) begin
-    // reset driven valid/ready signals unless they are set again later down
-    // I think for performance reasons, I should probably change a*_ready and
-    // w_ready to be combinatorical so that they don't lag behind completing
-    // a transaction by one cycle
-    aw_ready <= 0;
-    w_ready <= 0;
-    if (b_ready) b_valid <= 0;
-    ar_ready <= 0;
-
-    if (acceptable_write) begin
-        aw_ready <= 1;
-        w_ready <= 1;
-
-        sram_rd <= 0;
-        sram_req <= 1;
-        sram_be <= w_strb ^ 2'b11;
-
-        sram_addr <= aw_addr;
-        sram_wr_data <= w_data;
-    end
-    if (acceptable_read) begin
-        ar_ready <= 1;
-        // need to undo accepting the write transaction if there was one
+    if (a_rst) begin
+        // reset driven valid/ready signals unless they are set again later down
+        // I think for performance reasons, I should probably change a*_ready and
+        // w_ready to be combinatorical so that they don't lag behind completing
+        // a transaction by one cycle
         aw_ready <= 0;
         w_ready <= 0;
+        if (b_ready) b_valid <= 0;
+        ar_ready <= 0;
 
-        sram_rd <= 1;
-        sram_req <= 1;
-        sram_be <= 2'b11;
+        if (acceptable_write) begin
+            aw_ready <= 1;
+            w_ready <= 1;
 
-        sram_addr <= ar_addr;
-    end
-    if (sram_req & sram_ready) begin
-        sram_req <= 0;
+            sram_rd <= 0;
+            sram_req <= 1;
+            sram_be <= w_strb ^ 2'b11;
 
-        if (!sram_rd) begin
-            b_valid <= 1;
-            // if this was a write transaction, we have to send a respone here.
+            sram_addr <= aw_addr;
+            sram_wr_data <= w_data;
         end
+        if (acceptable_read) begin
+            ar_ready <= 1;
+            // need to undo accepting the write transaction if there was one
+            aw_ready <= 0;
+            w_ready <= 0;
+
+            sram_rd <= 1;
+            sram_req <= 1;
+            sram_be <= 2'b11;
+
+            sram_addr <= ar_addr;
+        end
+        if (sram_req & sram_ready) begin
+            sram_req <= 0;
+
+            if (!sram_rd) begin
+                b_valid <= 1;
+                // if this was a write transaction, we have to send a respone here.
+            end
+        end
+    end else begin
+        aw_ready <= 0;
+        w_ready <= 0;
+        ar_ready <= 0;
+        b_valid <= 0;
+        sram_req <= 0;
+        sram_rd <= 0;
+        sram_addr <= 0;
+        sram_wr_data <= 0;
     end
 end
 

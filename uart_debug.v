@@ -19,8 +19,11 @@ module uart_debug(
     // axi write response channel
     input axi_b_valid, output reg axi_b_ready,
     // debug stuff
-    output [2:0] leds
+    output [2:0] leds,
+    output reg axi_resetn
 );
+
+initial axi_resetn = 0;
 
 initial uart_rx_ready = 1;
 initial uart_tx_valid = 0;
@@ -41,10 +44,11 @@ reg [7:0] uart_tx_next = 0;
 initial uart_tx = 0;
 
 integer state = 0;
-assign leds = state[2:0];
+assign leds = state[0:0];
 always @(posedge clk) begin
     case (state)
         0: if (uart_rx_valid) begin
+            axi_resetn <= 1;
             command_reg[23:16] <= uart_rx;
             state <= 1;
         end
