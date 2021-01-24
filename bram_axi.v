@@ -1,3 +1,6 @@
+`ifndef BRAM_AXI
+`define BRAM_AXI
+
 `default_nettype none
 
 module bram_axi(
@@ -83,3 +86,5 @@ always @(posedge a_clk) begin
 end
 
 endmodule
+
+`endif

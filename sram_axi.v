@@ -1,3 +1,6 @@
+`ifndef SRAM_AXI
+`define SRAM_AXI
+
 `default_nettype none
 
 /**
@@ -189,3 +192,5 @@ end
 `endif
 
 endmodule
+
+`endif

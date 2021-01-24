@@ -1,3 +1,6 @@
+`ifndef UART_DEBUG
+`define UART_DEBUG
+
 module uart_debug(
     input clk,
     // uart rx
@@ -126,3 +129,5 @@ end
 // 10 wait for axi partner to set b_valid then go back to idle
 
 endmodule
+
+`endif

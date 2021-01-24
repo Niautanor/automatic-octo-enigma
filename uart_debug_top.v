@@ -1,3 +1,6 @@
+`ifndef UART_DEBUG_TOP
+`define UART_DEBUG_TOP
+
 `default_nettype none
 
 `include "uart_tx.v"
@@ -176,3 +179,5 @@ uart_debug debug(
 );
 
 endmodule
+
+`endif

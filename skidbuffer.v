@@ -1,3 +1,6 @@
+`ifndef SKIDBUFFER
+`define SKIDBUFFER
+
 `default_nettype none
 
 module skidbuffer #(
@@ -82,3 +85,5 @@ end
 `endif
 
 endmodule
+
+`endif
