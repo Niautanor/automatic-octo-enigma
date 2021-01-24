@@ -53,14 +53,20 @@ reg uart_rx_valid = 0;
 reg [7:0] uart_rx_data = 0;
 wire uart_rx_ready;
 always @(posedge clk) begin
-    if (next_address < 22) begin
+    if (next_address == 0) begin
         uart_rx_valid <= 1;
+        uart_rx_data <= uart_in[0];
+        if (uart_rx_valid & uart_rx_ready) begin
+            next_address <= 1;
+            uart_rx_data <= uart_in[1];
+        end
+    end else if (next_address < 21) begin
         if (uart_rx_ready) begin
-            uart_rx_data <= uart_in[next_address];
             next_address <= next_address + 1;
+            uart_rx_data <= uart_in[next_address + 1];
         end
     end else begin
-        uart_rx_valid <= 0;
+        if (uart_rx_ready) uart_rx_valid <= 0;
     end
 end
 
