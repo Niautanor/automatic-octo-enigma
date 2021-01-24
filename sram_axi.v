@@ -90,7 +90,7 @@ always @(posedge a_clk) begin
 
         sram_rd <= 0;
         sram_req <= 1;
-        sram_be <= w_strb;
+        sram_be <= w_strb ^ 2'b11;
 
         sram_addr <= aw_addr;
         sram_wr_data <= w_data;
