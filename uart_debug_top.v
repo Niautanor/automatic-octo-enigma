@@ -19,6 +19,7 @@
 
 module uart_debug_top(input clk, input rx, output tx, output [3:0] leds, output RAMCS, output RAMWE, output RAMOE, output RAMLB, output RAMUB, inout [17:0] ADR, inout [15:0] DAT);
 
+parameter MAIN_CLK = 100000000;
 parameter BAUD = 9600;
 
 reg rx0 = 1;
@@ -31,12 +32,13 @@ end
 wire rx_ready;
 wire rx_valid;
 wire [7:0] rx_data;
-uart_rx #(.BAUD(BAUD)) rx_inst(.clk(clk), .rx(rx1), .data_ready(rx_ready), .data_valid(rx_valid), .data(rx_data), .overflow(leds[0]));
+wire overflow;
+uart_rx #(.MAIN_CLK(MAIN_CLK), .BAUD(BAUD)) rx_inst(.clk(clk), .rx(rx1), .data_ready(rx_ready), .data_valid(rx_valid), .data(rx_data), .overflow(overflow));
 
 wire tx_ready;
 wire tx_valid;
 wire [7:0] tx_data;
-uart_tx #(.BAUD(BAUD)) tx_inst(.clk(clk), .tx(tx), .data_in_ready(tx_ready), .data_in_valid(tx_valid), .data_in(tx_data));
+uart_tx #(.MAIN_CLK(MAIN_CLK), .BAUD(BAUD)) tx_inst(.clk(clk), .tx(tx), .data_in_ready(tx_ready), .data_in_valid(tx_valid), .data_in(tx_data));
 
 wire axi_resetn = 1;
 wire axi_aw_valid;
@@ -47,6 +49,7 @@ wire axi_w_ready;
 wire [15:0] axi_w_data;
 wire axi_b_valid;
 wire axi_b_ready;
+wire [1:0] axi_b_resp;
 wire axi_ar_valid;
 wire axi_ar_ready;
 wire [17:0] axi_ar_addr;
@@ -54,10 +57,6 @@ wire axi_r_valid;
 wire axi_r_ready;
 wire [15:0] axi_r_data;
 wire [1:0] axi_r_resp;
-wire axi_aw_ready;
-wire axi_w_ready;
-wire axi_b_valid;
-wire [1:0] axi_b_resp;
 
 `ifdef SRAM
 wire sram_req;
@@ -74,18 +73,18 @@ sram_axi axi(
     .aw_valid(axi_aw_valid),
     .aw_ready(axi_aw_ready),
     .aw_addr(axi_aw_addr),
-    .aw_prot('0),
+    .aw_prot(1'd0),
     .w_valid(axi_w_valid),
     .w_ready(axi_w_ready),
     .w_data(axi_w_data),
-    .w_strb('0),
+    .w_strb(2'd0),
     .b_valid(axi_b_valid),
     .b_ready(axi_b_ready),
     .b_resp(axi_b_resp),
     .ar_valid(axi_ar_valid),
     .ar_ready(axi_ar_ready),
     .ar_addr(axi_ar_addr),
-    .ar_prot('0),
+    .ar_prot(1'd0),
     .r_valid(axi_r_valid),
     .r_ready(axi_r_ready),
     .r_data(axi_r_data),
@@ -98,15 +97,17 @@ sram_axi axi(
     .sram_be(sram_be),
     .sram_wr_data(sram_wr_data),
     .sram_rd_data_vld(sram_rd_data_vld),
-    .sram_rd_data(sram_rd_data)
+    .sram_rd_data(sram_rd_data),
+
+    .leds(leds)
 );
 
-reg sram_reset = 0;
-always @(posedge clk) sram_reset <= 1;
+reg sram_resetn = 0;
+always @(posedge clk) sram_resetn <= 1;
 
 sram_top sram(
 	.clk(clk),
-	.reset_(sram_reset),
+	.reset_(sram_resetn),
 	// SRAM core issue interface
 	.sram_req(sram_req),
 	.sram_ready(sram_ready),
@@ -135,18 +136,18 @@ bram_axi axi(
     .aw_valid(axi_aw_valid),
     .aw_ready(axi_aw_ready),
     .aw_addr(axi_aw_addr),
-    .aw_prot('0),
+    .aw_prot(1'd0),
     .w_valid(axi_w_valid),
     .w_ready(axi_w_ready),
     .w_data(axi_w_data),
-    .w_strb('0),
+    .w_strb(2'd0),
     .b_valid(axi_b_valid),
     .b_ready(axi_b_ready),
     .b_resp(axi_b_resp),
     .ar_valid(axi_ar_valid),
     .ar_ready(axi_ar_ready),
     .ar_addr(axi_ar_addr),
-    .ar_prot('0),
+    .ar_prot(1'd0),
     .r_valid(axi_r_valid),
     .r_ready(axi_r_ready),
     .r_data(axi_r_data),
