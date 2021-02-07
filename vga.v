@@ -10,13 +10,13 @@ reg [9:0] x = 0;
 wire [9:0] x_next = (x == 799) ? 0 : x + 1;
 always @(posedge clk) if (pixelclk) x <= x_next;
 
-assign hsync = x >= (640 + 16) & x < (640 + 16 + 96);
+assign hsync = !(x >= (640 + 16) & x < (640 + 16 + 96));
 
 reg [9:0] y = 0;
 wire [9:0] y_next = (x == 799) ? (y == 523) ? 0 : y + 1 : y;
 always @(posedge clk) if (pixelclk) y <= y_next;
 
-assign vsync = y >= (480 + 11) & y < (480 + 11 + 2);
+assign vsync = !(y >= (480 + 11) & y < (480 + 11 + 2));
 
 reg [5:0] memory[0:127][0:127];
 initial $readmemh("data/image.hex", memory);
