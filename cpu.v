@@ -14,7 +14,7 @@ wire uart_rdy;
 
 reg phase = 0;
 
-uart_tx uart(.clk(clk), .rst(1'b0), .en(uart_en), .data_in(data), .rdy(uart_rdy), .tx(tx));
+uart_tx uart(.clk(clk), .data_in(data), .data_in_valid(uart_en), .data_in_ready(uart_rdy), .tx(tx));
 
 always @(posedge clk) begin
     uart_en <= 0;
