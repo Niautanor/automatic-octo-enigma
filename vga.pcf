@@ -1,14 +1,21 @@
-set_io hsync 94 # rd7
-set_io vsync 95 # rd5
+# Digilent VGA pmod on pmod3/4 + pmod5/6
+set_io hsync 104 # P12
+set_io vsync 101 # P13
 
-set_io r[0] 87
-set_io r[1] 85
+set_io b[0] 144 # P20
+set_io b[1] 113 # P21
+set_io b[2] 110 # P22
+set_io b[3] 106 # P23
 
-set_io g[0] 90
-set_io g[1] 88
+set_io g[0] 105 # P8
+set_io g[1] 102 # P9
+set_io g[2] 99 # P10
+set_io g[3] 97 # P111
 
-set_io b[0] 93
-set_io b[1] 91
+set_io r[0] 143 # P16
+set_io r[1] 114 # P17
+set_io r[2] 112 # P18
+set_io r[3] 107 # P19
 
 # Onboard 100Mhz oscillator
 set_io clk 129

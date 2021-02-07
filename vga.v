@@ -1,6 +1,6 @@
 `default_nettype none
 
-module vga(input clk, output hsync, output vsync, output [1:0] r, output [1:0] g, output [1:0] b);
+module vga(input clk, output hsync, output vsync, output [3:0] r, output [3:0] g, output [3:0] b);
 
 reg [1:0] pixelcnt;
 wire pixelclk = (pixelcnt == 3);
@@ -28,8 +28,8 @@ always @(posedge clk) begin
     if (pixelclk) pixel <= (x < 256 & y < 256) ? pixel_next : 0;
 end
 
-assign r = (x < 640 & y < 480) ? pixel[5:4] : 0;
-assign g = (x < 640 & y < 480) ? pixel[3:2] : 0;
-assign b = (x < 640 & y < 480) ? pixel[1:0] : 0;
+assign r = (x < 640 & y < 480) ? {pixel[5:4], pixel[5:4]} : 0;
+assign g = (x < 640 & y < 480) ? {pixel[3:2], pixel[3:2]} : 0;
+assign b = (x < 640 & y < 480) ? {pixel[1:0], pixel[1:0]} : 0;
 
 endmodule
