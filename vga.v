@@ -1,5 +1,7 @@
 `default_nettype none
 
+`include "palette.v"
+
 module vga(input clk, output hsync, output vsync, output [3:0] r, output [3:0] g, output [3:0] b);
 
 reg [1:0] pixelcnt;
@@ -19,7 +21,7 @@ always @(posedge clk) if (pixelclk) y <= y_next;
 assign vsync = !(y >= (480 + 11) & y < (480 + 11 + 2));
 
 reg [5:0] memory[0:127][0:127];
-initial $readmemh("data/image.hex", memory);
+initial $readmemh("data/rabbit.hex", memory);
 
 reg [5:0] pixel_next;
 reg [5:0] pixel;
@@ -28,8 +30,6 @@ always @(posedge clk) begin
     if (pixelclk) pixel <= (x < 256 & y < 256) ? pixel_next : 0;
 end
 
-assign r = (x < 640 & y < 480) ? {pixel[5:4], pixel[5:4]} : 0;
-assign g = (x < 640 & y < 480) ? {pixel[3:2], pixel[3:2]} : 0;
-assign b = (x < 640 & y < 480) ? {pixel[1:0], pixel[1:0]} : 0;
+palette p(.clk(clk), .pixel(pixel), .enable(x < 640 & y < 480), .r(r), .g(g), .b(b));
 
 endmodule

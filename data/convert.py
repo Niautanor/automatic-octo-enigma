@@ -1,6 +1,6 @@
 from PIL import Image
 
-image = Image.open("image.png")
+image = Image.open("rabbit.png")
 pixels = image.load()
 
 for y in range(128):
